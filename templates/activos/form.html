@@ -1,0 +1,144 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Editar' if activo else 'Nuevo' }} Activo{% endblock %}
+{% block page_title %}
+    <i class="bi bi-server me-2"></i>{{ 'Editar Activo' if activo else 'Registrar Nuevo Activo' }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-header">
+    Datos del Activo de Información
+</div>
+<div class="card-body">
+<form method="POST" novalidate>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Nombre del activo <span class="text-danger">*</span></label>
+        <input type="text" name="nombre" class="form-control"
+               value="{{ activo.nombre if activo else '' }}"
+               placeholder="Ej: Servidor de base de datos principal" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Tipo de activo <span class="text-danger">*</span></label>
+        <select name="tipo" class="form-select" required>
+            <option value="">— Seleccionar tipo —</option>
+            {% for tipo in tipos %}
+            <option value="{{ tipo }}" {{ 'selected' if activo and activo.tipo == tipo else '' }}>
+                {{ tipo }}
+            </option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Clasificación según MAGERIT: Hardware, Software, Redes, Datos, Personal, etc.</div>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Descripción</label>
+        <textarea name="descripcion" class="form-control" rows="2"
+                  placeholder="Breve descripción del activo y su función en la organización">{{ activo.descripcion if activo else '' }}</textarea>
+    </div>
+
+    <hr>
+    <h6 class="mb-3 fw-bold">Valoración CID <small class="text-muted fw-normal">(Escala MAGERIT 0–5)</small></h6>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">
+            Confidencialidad:
+            <span id="val-c" class="badge bg-primary ms-1">{{ activo.confidencialidad if activo else 0 }}</span>
+        </label>
+        <input type="range" class="form-range" name="confidencialidad"
+               min="0" max="5" step="1"
+               value="{{ activo.confidencialidad if activo else 0 }}"
+               oninput="updateSlider('c', this.value)">
+        <div class="d-flex justify-content-between">
+            <small class="text-muted">0 – Sin valor</small>
+            <small class="text-muted">5 – Muy Alto</small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">
+            Integridad:
+            <span id="val-i" class="badge bg-primary ms-1">{{ activo.integridad if activo else 0 }}</span>
+        </label>
+        <input type="range" class="form-range" name="integridad"
+               min="0" max="5" step="1"
+               value="{{ activo.integridad if activo else 0 }}"
+               oninput="updateSlider('i', this.value)">
+        <div class="d-flex justify-content-between">
+            <small class="text-muted">0 – Sin valor</small>
+            <small class="text-muted">5 – Muy Alto</small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">
+            Disponibilidad:
+            <span id="val-d" class="badge bg-primary ms-1">{{ activo.disponibilidad if activo else 0 }}</span>
+        </label>
+        <input type="range" class="form-range" name="disponibilidad"
+               min="0" max="5" step="1"
+               value="{{ activo.disponibilidad if activo else 0 }}"
+               oninput="updateSlider('d', this.value)">
+        <div class="d-flex justify-content-between">
+            <small class="text-muted">0 – Sin valor</small>
+            <small class="text-muted">5 – Muy Alto</small>
+        </div>
+    </div>
+
+    <div class="alert alert-info py-2 mb-4">
+        <small>
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Valor Total estimado: <span id="valor-total">{{ activo.valor_total if activo else 0 }}</span></strong>
+            &nbsp;— Calculado como max(C, I, D) según MAGERIT
+        </small>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>{{ 'Guardar Cambios' if activo else 'Registrar Activo' }}
+        </button>
+        <a href="{{ url_for('activos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+    <div class="card">
+        <div class="card-header">Escala de Valoración MAGERIT</div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Valor</th><th>Nivel</th><th>Descripción</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge bg-light text-dark border">0</span></td><td>Sin valor</td><td class="small text-muted">No aplica o irrelevante</td></tr>
+                    <tr><td><span class="badge bg-success">1</span></td><td>Muy Bajo</td><td class="small text-muted">Impacto muy reducido</td></tr>
+                    <tr><td><span class="badge bg-success">2</span></td><td>Bajo</td><td class="small text-muted">Impacto limitado</td></tr>
+                    <tr><td><span class="badge bg-warning text-dark">3</span></td><td>Medio</td><td class="small text-muted">Impacto significativo</td></tr>
+                    <tr><td><span class="badge bg-danger">4</span></td><td>Alto</td><td class="small text-muted">Impacto grave</td></tr>
+                    <tr><td><span class="badge bg-danger">5</span></td><td>Muy Alto</td><td class="small text-muted">Impacto catastrófico</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CID_LABELS = {0:'Sin valor',1:'Muy Bajo',2:'Bajo',3:'Medio',4:'Alto',5:'Muy Alto'};
+const vals = {
+    c: parseInt(document.getElementById('val-c').textContent),
+    i: parseInt(document.getElementById('val-i').textContent),
+    d: parseInt(document.getElementById('val-d').textContent)
+};
+function updateSlider(dim, value) {
+    vals[dim] = parseInt(value);
+    document.getElementById('val-' + dim).textContent = value;
+    document.getElementById('valor-total').textContent = Math.max(vals.c, vals.i, vals.d);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+# Base de datos SQLite (cada quien tiene la suya local)
+instance/
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entorno virtual Pipenv
+.venv/
+venv/
+
+# Variables de entorno (claves secretas)
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+desktop.ini

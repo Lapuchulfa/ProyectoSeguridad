@@ -1,0 +1,268 @@
+{% extends 'layout.html' %}
+{% block title %}Reporte{% endblock %}
+{% block page_title %}<i class="bi bi-file-earmark-bar-graph me-2"></i>Reporte de Gestión de Riesgos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0 small">Generado: {{ fecha }} | Metodología MAGERIT v3 · ISO/IEC 27002:2022</p>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reportes.pdf') }}" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="bi bi-printer me-1"></i>Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Resumen ejecutivo -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Activos</div>
+                <div class="fw-bold fs-3">{{ activos|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Riesgos</div>
+                <div class="fw-bold fs-3">{{ riesgos|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Con Tratamiento</div>
+                <div class="fw-bold fs-3 text-success">{{ riesgos|selectattr('tratamiento')|list|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Críticos</div>
+                <div class="fw-bold fs-3 text-danger">{{ riesgos|selectattr('nivel_riesgo', 'ge', 19)|list|length }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 1. Activos -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        <i class="bi bi-server me-2"></i>1. Valoración de Activos de Información
+    </div>
+    <div class="card-body p-0">
+        {% if activos %}
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th class="text-center">C</th>
+                    <th class="text-center">I</th>
+                    <th class="text-center">D</th>
+                    <th class="text-center">Valor</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in activos %}
+                <tr>
+                    <td class="ps-3">{{ loop.index }}</td>
+                    <td class="fw-semibold">{{ a.nombre }}</td>
+                    <td><span class="badge bg-secondary">{{ a.tipo }}</span></td>
+                    <td class="text-center">{{ a.confidencialidad }}</td>
+                    <td class="text-center">{{ a.integridad }}</td>
+                    <td class="text-center">{{ a.disponibilidad }}</td>
+                    <td class="text-center"><strong>{{ a.valor_total }}</strong></td>
+                    <td class="small text-muted">{{ a.descripcion or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No hay activos registrados.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 2. Riesgos -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        <i class="bi bi-exclamation-triangle me-2"></i>2. Análisis y Valoración de Riesgos
+    </div>
+    <div class="card-body p-0">
+        {% if riesgos %}
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Activo</th>
+                    <th>Amenaza</th>
+                    <th>Vulnerabilidad</th>
+                    <th class="text-center">P</th>
+                    <th class="text-center">I</th>
+                    <th class="text-center">Nivel</th>
+                    <th class="text-center">Clasificación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in riesgos %}
+                {% set ni = clasificar_nivel(r.nivel_riesgo) %}
+                <tr>
+                    <td class="ps-3">{{ loop.index }}</td>
+                    <td>{{ r.activo.nombre }}</td>
+                    <td>{{ r.amenaza }}</td>
+                    <td class="small">{{ r.vulnerabilidad }}</td>
+                    <td class="text-center">{{ r.probabilidad }}</td>
+                    <td class="text-center">{{ r.impacto }}</td>
+                    <td class="text-center fw-bold">{{ r.nivel_riesgo }}</td>
+                    <td class="text-center">
+                        <span class="badge {{ 'bg-success' if ni[0] == 'Bajo' else 'bg-warning text-dark' if ni[0] == 'Moderado' else 'bg-danger' }}">
+                            {{ ni[0] }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No hay riesgos registrados.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 3. Tratamientos -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        <i class="bi bi-shield-check me-2"></i>3. Tratamiento de Riesgos (ISO/IEC 27002:2022)
+    </div>
+    <div class="card-body p-0">
+        {% set riesgos_con_trat = riesgos|selectattr('tratamiento')|list %}
+        {% if riesgos_con_trat %}
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Activo / Amenaza</th>
+                    <th>Estrategia</th>
+                    <th>Control ISO 27002:2022</th>
+                    <th>Detalles</th>
+                    <th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in riesgos_con_trat %}
+                <tr>
+                    <td class="ps-3">{{ loop.index }}</td>
+                    <td>
+                        <strong>{{ r.activo.nombre }}</strong><br>
+                        <small class="text-muted">{{ r.amenaza }}</small>
+                    </td>
+                    <td><span class="badge bg-success">{{ r.tratamiento.estrategia }}</span></td>
+                    <td class="small">{{ r.tratamiento.control_iso27002 }}</td>
+                    <td class="small text-muted">{{ r.tratamiento.detalles_control or '—' }}</td>
+                    <td>{{ r.tratamiento.responsable }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No hay tratamientos registrados.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 4. Riesgo Residual -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        <i class="bi bi-calculator me-2"></i>4. Cálculo de Riesgo Residual
+    </div>
+    <div class="card-body p-0">
+        {% set riesgos_con_res = riesgos|selectattr('residual')|list %}
+        {% if riesgos_con_res %}
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Activo / Amenaza</th>
+                    <th class="text-center">Nivel Inicial</th>
+                    <th class="text-center">P Residual</th>
+                    <th class="text-center">I Residual</th>
+                    <th class="text-center">Nivel Residual</th>
+                    <th class="text-center">Reducción</th>
+                    <th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in riesgos_con_res %}
+                {% set res = r.residual %}
+                {% set reduccion = r.nivel_riesgo - res.nivel_residual %}
+                {% set ri = clasificar_nivel(res.nivel_residual) %}
+                <tr>
+                    <td class="ps-3">{{ loop.index }}</td>
+                    <td>
+                        <strong>{{ r.activo.nombre }}</strong><br>
+                        <small class="text-muted">{{ r.amenaza }}</small>
+                    </td>
+                    <td class="text-center fw-bold">{{ r.nivel_riesgo }}</td>
+                    <td class="text-center">{{ res.probabilidad_residual }}</td>
+                    <td class="text-center">{{ res.impacto_residual }}</td>
+                    <td class="text-center fw-bold">{{ res.nivel_residual }}</td>
+                    <td class="text-center text-success fw-bold">-{{ reduccion }}</td>
+                    <td class="text-center">
+                        <span class="badge {{ 'bg-success' if res.nivel_residual <= 6 else 'bg-warning text-dark' if res.nivel_residual <= 12 else 'bg-danger' }}">
+                            {{ 'Aceptable' if res.nivel_residual <= 6 else 'Revisar' if res.nivel_residual <= 12 else 'No Aceptable' }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No hay riesgos residuales calculados.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 5. Observaciones -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">
+        <i class="bi bi-chat-dots me-2"></i>5. Observaciones y Recomendaciones
+    </div>
+    <div class="card-body p-0">
+        {% if observaciones %}
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Módulo</th>
+                    <th>Observación</th>
+                    <th>Autor</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obs in observaciones %}
+                <tr>
+                    <td class="ps-3">{{ loop.index }}</td>
+                    <td><span class="badge bg-primary">{{ obs.origen_modulo }}</span></td>
+                    <td>{{ obs.comentario }}</td>
+                    <td>{{ obs.autor_nombre }}</td>
+                    <td class="small text-muted">{{ obs.fecha_creacion.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No hay observaciones registradas.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

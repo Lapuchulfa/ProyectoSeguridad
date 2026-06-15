@@ -1,0 +1,151 @@
+{% extends 'layout.html' %}
+{% block title %}Riesgo Residual{% endblock %}
+{% block page_title %}
+    <i class="bi bi-calculator me-2"></i>{{ 'Actualizar' if res else 'Calcular' }} Riesgo Residual
+{% endblock %}
+
+{% block content %}
+<!-- Contexto: Riesgo original -->
+{% set ni = clasificar_nivel(riesgo.nivel_riesgo) %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-secondary">
+            <div class="card-header bg-secondary text-white">Riesgo Inicial (antes del control)</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Activo:</strong> {{ riesgo.activo.nombre }}</p>
+                <p class="mb-1"><strong>Amenaza:</strong> {{ riesgo.amenaza }}</p>
+                <p class="mb-1"><strong>P × I:</strong> {{ riesgo.probabilidad }} × {{ riesgo.impacto }} =
+                    <span class="badge {{ 'bg-success' if ni[0] == 'Bajo' else 'bg-warning text-dark' if ni[0] == 'Moderado' else 'bg-danger' }} ms-1">
+                        {{ riesgo.nivel_riesgo }} — {{ ni[0] }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% if riesgo.tratamiento %}
+    <div class="col-md-6">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">Tratamiento Aplicado</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Estrategia:</strong>
+                    <span class="badge bg-success">{{ riesgo.tratamiento.estrategia }}</span>
+                </p>
+                <p class="mb-1"><strong>Control:</strong> {{ riesgo.tratamiento.control_iso27002 }}</p>
+                <p class="mb-0"><strong>Responsable:</strong> {{ riesgo.tratamiento.responsable }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-header">Valores Residuales (después del control)</div>
+<div class="card-body">
+<form method="POST" novalidate>
+    <p class="text-muted small mb-3">
+        Evalúa los nuevos valores de probabilidad e impacto asumiendo que el control ha sido implementado.
+    </p>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Probabilidad Residual <span class="text-danger">*</span></label>
+        <select name="probabilidad_residual" class="form-select" id="sel-pr" onchange="calcResidual()" required>
+            {% for val, lbl in prob_labels.items() %}
+            <option value="{{ val }}" {{ 'selected' if res and res.probabilidad_residual == val else ('selected' if not res and val == 1 else '') }}>
+                {{ lbl }}
+            </option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Probabilidad de ocurrencia luego de implementar el control.</div>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Impacto Residual <span class="text-danger">*</span></label>
+        <select name="impacto_residual" class="form-select" id="sel-ir" onchange="calcResidual()" required>
+            {% for val, lbl in imp_labels.items() %}
+            <option value="{{ val }}" {{ 'selected' if res and res.impacto_residual == val else ('selected' if not res and val == 1 else '') }}>
+                {{ lbl }}
+            </option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Magnitud del daño si el riesgo ocurre después del control.</div>
+    </div>
+
+    <!-- Comparativa -->
+    <div class="card mb-4" id="comparativa">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="text-muted small">Riesgo Inicial</div>
+                    <div class="fw-bold fs-4" id="val-inicial">{{ riesgo.nivel_riesgo }}</div>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted small">Riesgo Residual</div>
+                    <div class="fw-bold fs-4" id="val-residual">{{ res.nivel_residual if res else 1 }}</div>
+                    <span class="badge" id="lbl-residual">—</span>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted small">Reducción</div>
+                    <div class="fw-bold fs-4 text-success" id="val-reduccion">
+                        {{ riesgo.nivel_riesgo - res.nivel_residual if res else riesgo.nivel_riesgo - 1 }}
+                    </div>
+                    <small class="text-muted" id="pct-reduccion"></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-info text-white">
+            <i class="bi bi-calculator me-1"></i>{{ 'Actualizar Residual' if res else 'Calcular Riesgo Residual' }}
+        </button>
+        <a href="{{ url_for('riesgos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+    <div class="card">
+        <div class="card-header">Criterio de Aceptación</div>
+        <div class="card-body">
+            <p class="small text-muted">Según MAGERIT, el riesgo residual es aceptable cuando cae en la zona verde (Bajo) de la matriz.</p>
+            <table class="table table-sm text-center">
+                <thead><tr><th>Nivel Residual</th><th>Estado</th></tr></thead>
+                <tbody>
+                    <tr><td>1 – 6</td><td><span class="badge bg-success">Aceptable</span></td></tr>
+                    <tr><td>7 – 12</td><td><span class="badge bg-warning text-dark">Revisar</span></td></tr>
+                    <tr><td>13 – 25</td><td><span class="badge bg-danger">No Aceptable</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const nivelInicial = {{ riesgo.nivel_riesgo }};
+function calcResidual() {
+    const pr = parseInt(document.getElementById('sel-pr').value);
+    const ir = parseInt(document.getElementById('sel-ir').value);
+    const res = pr * ir;
+    const reduccion = nivelInicial - res;
+    const pct = Math.round((reduccion / nivelInicial) * 100);
+    document.getElementById('val-residual').textContent = res;
+    document.getElementById('val-reduccion').textContent = reduccion;
+    document.getElementById('pct-reduccion').textContent = pct + '% reducción';
+    let label, badge;
+    if (res <= 6)       { label = 'Aceptable'; badge = 'bg-success'; }
+    else if (res <= 12) { label = 'Revisar';   badge = 'bg-warning text-dark'; }
+    else                { label = 'No Aceptable'; badge = 'bg-danger'; }
+    const lbl = document.getElementById('lbl-residual');
+    lbl.textContent = label;
+    lbl.className = 'badge ' + badge;
+}
+calcResidual();
+</script>
+{% endblock %}

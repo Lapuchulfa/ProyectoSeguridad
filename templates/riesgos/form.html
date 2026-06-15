@@ -1,0 +1,145 @@
+{% extends 'layout.html' %}
+{% block title %}{{ 'Editar' if riesgo else 'Nuevo' }} Riesgo{% endblock %}
+{% block page_title %}
+    <i class="bi bi-exclamation-triangle me-2"></i>{{ 'Editar Riesgo' if riesgo else 'Identificar Nuevo Riesgo' }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-header">Datos del Riesgo</div>
+<div class="card-body">
+<form method="POST" novalidate>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Activo afectado <span class="text-danger">*</span></label>
+        <select name="activo_id" class="form-select" required>
+            <option value="">— Seleccionar activo —</option>
+            {% for a in activos %}
+            <option value="{{ a.id }}" {{ 'selected' if riesgo and riesgo.activo_id == a.id else '' }}>
+                {{ a.nombre }} ({{ a.tipo }}) — Valor: {{ a.valor_total }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Amenaza <span class="text-danger">*</span></label>
+        <input type="text" name="amenaza" class="form-control" list="lista-amenazas"
+               value="{{ riesgo.amenaza if riesgo else '' }}"
+               placeholder="Escribe o selecciona una amenaza MAGERIT" required>
+        <datalist id="lista-amenazas">
+            {% for a in amenazas %}
+            <option value="{{ a }}">
+            {% endfor %}
+        </datalist>
+        <div class="form-text">Puedes seleccionar de la lista predefinida MAGERIT o escribir una propia.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Vulnerabilidad <span class="text-danger">*</span></label>
+        <textarea name="vulnerabilidad" class="form-control" rows="2" required
+                  placeholder="Describe la debilidad o brecha que permite que la amenaza se materialice">{{ riesgo.vulnerabilidad if riesgo else '' }}</textarea>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Probabilidad <span class="text-danger">*</span></label>
+            <select name="probabilidad" class="form-select" id="sel-prob" onchange="calcRiesgo()" required>
+                {% for val, lbl in prob_labels.items() %}
+                <option value="{{ val }}" {{ 'selected' if riesgo and riesgo.probabilidad == val else ('selected' if not riesgo and val == 1 else '') }}>
+                    {{ lbl }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Impacto <span class="text-danger">*</span></label>
+            <select name="impacto" class="form-select" id="sel-imp" onchange="calcRiesgo()" required>
+                {% for val, lbl in imp_labels.items() %}
+                <option value="{{ val }}" {{ 'selected' if riesgo and riesgo.impacto == val else ('selected' if not riesgo and val == 1 else '') }}>
+                    {{ lbl }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="alert py-2 mb-4" id="nivel-alerta" role="alert">
+        <strong>Nivel de Riesgo estimado: </strong>
+        <span id="nivel-valor" class="fw-bold fs-5">{{ riesgo.nivel_riesgo if riesgo else 1 }}</span>
+        &nbsp;—&nbsp;
+        <span id="nivel-label" class="badge">{{ clasificar_nivel(riesgo.nivel_riesgo)[0] if riesgo else 'Bajo' }}</span>
+        <br><small>Fórmula: Probabilidad × Impacto</small>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>{{ 'Guardar Cambios' if riesgo else 'Registrar Riesgo' }}
+        </button>
+        <a href="{{ url_for('riesgos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+    <div class="card mb-3">
+        <div class="card-header">Matriz de Riesgo (P × I)</div>
+        <div class="card-body p-0">
+            <table class="table table-sm text-center mb-0" style="font-size:0.8rem;">
+                <thead>
+                    <tr>
+                        <th>P \ I</th>
+                        {% for i in range(1,6) %}<th>{{ i }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in range(5,0,-1) %}
+                    <tr>
+                        <th>{{ p }}</th>
+                        {% for i in range(1,6) %}
+                        {% set n = p * i %}
+                        <td class="{{ 'bg-success text-white' if n <= 6 else 'bg-warning' if n <= 12 else 'bg-danger text-white' if n <= 18 else 'bg-dark text-white' }}">
+                            {{ n }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer p-2">
+            <small>
+                <span class="badge bg-success me-1">Bajo 1-6</span>
+                <span class="badge bg-warning text-dark me-1">Mod 7-12</span>
+                <span class="badge bg-danger me-1">Alto 13-18</span>
+                <span class="badge bg-dark me-1">Crítico 19-25</span>
+            </small>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calcRiesgo() {
+    const p = parseInt(document.getElementById('sel-prob').value);
+    const i = parseInt(document.getElementById('sel-imp').value);
+    const nivel = p * i;
+    document.getElementById('nivel-valor').textContent = nivel;
+    let label, alertClass;
+    if (nivel <= 6)       { label = 'Bajo';     alertClass = 'alert-success'; }
+    else if (nivel <= 12) { label = 'Moderado'; alertClass = 'alert-warning'; }
+    else if (nivel <= 18) { label = 'Alto';     alertClass = 'alert-danger'; }
+    else                  { label = 'Crítico';  alertClass = 'alert-danger'; }
+    const alerta = document.getElementById('nivel-alerta');
+    alerta.className = 'alert py-2 mb-4 ' + alertClass;
+    document.getElementById('nivel-label').textContent = label;
+}
+calcRiesgo();
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'layout.html' %}
+{% block title %}Observaciones{% endblock %}
+{% block page_title %}<i class="bi bi-chat-dots me-2"></i>Comunicación y Consulta{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0 small">Registro de observaciones, recomendaciones y notas para partes interesadas.</p>
+    <a href="{{ url_for('observaciones.nueva') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Nueva Observación
+    </a>
+</div>
+
+{% if observaciones %}
+
+<!-- Filtro rápido por módulo -->
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <button class="btn btn-sm btn-outline-secondary active" onclick="filtrar('')" id="btn-todos">Todos</button>
+    {% for m in modulos %}
+    <button class="btn btn-sm btn-outline-secondary" onclick="filtrar('{{ m }}')" id="btn-{{ loop.index }}">{{ m }}</button>
+    {% endfor %}
+</div>
+
+<div class="card">
+<div class="card-body p-0">
+<table class="table table-hover mb-0" id="tabla-obs">
+    <thead>
+        <tr>
+            <th class="ps-3">#</th>
+            <th>Módulo</th>
+            <th>Observación / Recomendación</th>
+            <th>Autor</th>
+            <th>Fecha</th>
+            <th class="text-center">Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for obs in observaciones %}
+        <tr data-modulo="{{ obs.origen_modulo }}">
+            <td class="ps-3 text-muted">{{ loop.index }}</td>
+            <td>
+                <span class="badge bg-primary">{{ obs.origen_modulo }}</span>
+            </td>
+            <td>{{ obs.comentario }}</td>
+            <td>
+                <i class="bi bi-person-circle me-1 text-muted"></i>{{ obs.autor_nombre }}
+            </td>
+            <td>
+                <small class="text-muted">{{ obs.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</small>
+            </td>
+            <td class="text-center">
+                <form method="POST" action="{{ url_for('observaciones.eliminar', id=obs.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('¿Eliminar esta observación?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+<div class="mt-2">
+    <small class="text-muted">Total: {{ observaciones|length }} observación(es) registrada(s)</small>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-chat-dots text-muted" style="font-size:3rem;"></i>
+    <h5 class="mt-3 text-muted">No hay observaciones registradas</h5>
+    <p class="text-muted">Registra observaciones y recomendaciones del proceso de gestión de riesgos.</p>
+    <a href="{{ url_for('observaciones.nueva') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Registrar primera observación
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrar(modulo) {
+    const filas = document.querySelectorAll('#tabla-obs tbody tr');
+    filas.forEach(f => {
+        f.style.display = (!modulo || f.dataset.modulo === modulo) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

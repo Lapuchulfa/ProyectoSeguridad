@@ -1,0 +1,232 @@
+{% extends 'layout.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}<i class="bi bi-speedometer2 me-2"></i>Dashboard de Monitoreo{% endblock %}
+
+{% block content %}
+
+<!-- Tarjetas de resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Total Activos</div>
+                    <div class="fw-bold fs-2">{{ total_activos }}</div>
+                    <a href="{{ url_for('activos.index') }}" class="small text-primary">Ver activos →</a>
+                </div>
+                <i class="bi bi-server text-primary opacity-50" style="font-size:2.5rem;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Total Riesgos</div>
+                    <div class="fw-bold fs-2">{{ total_riesgos }}</div>
+                    <a href="{{ url_for('riesgos.index') }}" class="small text-primary">Ver riesgos →</a>
+                </div>
+                <i class="bi bi-exclamation-triangle text-warning opacity-50" style="font-size:2.5rem;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 {{ 'border-danger' if riesgos_criticos > 0 else '' }}">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Riesgos Críticos</div>
+                    <div class="fw-bold fs-2 {{ 'text-danger' if riesgos_criticos > 0 else '' }}">{{ riesgos_criticos }}</div>
+                    <small class="text-muted">Nivel 19–25</small>
+                </div>
+                <i class="bi bi-shield-x text-danger opacity-50" style="font-size:2.5rem;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 {{ 'border-warning' if sin_tratamiento > 0 else 'border-success' }}">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Sin Tratamiento</div>
+                    <div class="fw-bold fs-2 {{ 'text-warning' if sin_tratamiento > 0 else 'text-success' }}">{{ sin_tratamiento }}</div>
+                    <small class="text-muted">{{ total_tratamientos }} tratados</small>
+                </div>
+                <i class="bi bi-shield-check text-success opacity-50" style="font-size:2.5rem;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Gráfico distribución de riesgos -->
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Distribución de Riesgos por Nivel</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                {% if total_riesgos > 0 %}
+                <canvas id="chartRiesgos" height="220"></canvas>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-pie-chart" style="font-size:3rem;"></i>
+                    <p class="mt-2">Sin datos aún</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Riesgos más críticos -->
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Top 5 Riesgos por Nivel</div>
+            <div class="card-body p-0">
+                {% if riesgos_recientes %}
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Activo</th>
+                            <th>Amenaza</th>
+                            <th class="text-center">Nivel</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in riesgos_recientes %}
+                        {% set ni = clasificar_nivel(r.nivel_riesgo) %}
+                        <tr>
+                            <td class="ps-3">
+                                <strong>{{ r.activo.nombre }}</strong>
+                            </td>
+                            <td class="small">{{ r.amenaza }}</td>
+                            <td class="text-center">
+                                <span class="badge {{ 'bg-success' if ni[0] == 'Bajo' else 'bg-warning text-dark' if ni[0] == 'Moderado' else 'bg-danger' }} fw-bold">
+                                    {{ r.nivel_riesgo }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if r.tratamiento %}
+                                    <span class="badge bg-success">Tratado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Sin tratar</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <p>No hay riesgos registrados todavía.</p>
+                    <a href="{{ url_for('riesgos.nuevo') }}" class="btn btn-sm btn-primary">Identificar riesgo</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de progreso de cobertura -->
+<div class="row g-4 mt-1">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header fw-semibold">Panel de Monitoreo y Supervisión</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Cobertura de Tratamientos</label>
+                        {% set pct_trat = ((total_tratamientos / total_riesgos * 100) | int) if total_riesgos > 0 else 0 %}
+                        <div class="progress" style="height:20px;">
+                            <div class="progress-bar {{ 'bg-success' if pct_trat >= 80 else 'bg-warning' if pct_trat >= 50 else 'bg-danger' }}"
+                                 style="width:{{ pct_trat }}%">
+                                {{ pct_trat }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ total_tratamientos }} de {{ total_riesgos }} riesgos tratados</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Cobertura de Riesgo Residual</label>
+                        {% set pct_res = ((con_residual / total_riesgos * 100) | int) if total_riesgos > 0 else 0 %}
+                        <div class="progress" style="height:20px;">
+                            <div class="progress-bar bg-info"
+                                 style="width:{{ pct_res }}%">
+                                {{ pct_res }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ con_residual }} de {{ total_riesgos }} con residual calculado</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Acciones Rápidas</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('activos.nuevo') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus"></i> Activo
+                            </a>
+                            <a href="{{ url_for('riesgos.nuevo') }}" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-plus"></i> Riesgo
+                            </a>
+                            <a href="{{ url_for('reportes.index') }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-file-pdf"></i> Reporte
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen numérico por nivel -->
+                {% if total_riesgos > 0 %}
+                <hr class="my-3">
+                <div class="row text-center g-2">
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#d4edda;">
+                            <div class="fw-bold fs-4 text-success">{{ riesgos_bajos }}</div>
+                            <small class="text-success fw-semibold">Bajo (1–6)</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#fff3cd;">
+                            <div class="fw-bold fs-4" style="color:#856404;">{{ riesgos_moderados }}</div>
+                            <small class="fw-semibold" style="color:#856404;">Moderado (7–12)</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#ffe0b2;">
+                            <div class="fw-bold fs-4" style="color:#7c4d00;">{{ riesgos_altos }}</div>
+                            <small class="fw-semibold" style="color:#7c4d00;">Alto (13–18)</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#f8d7da;">
+                            <div class="fw-bold fs-4 text-danger">{{ riesgos_criticos }}</div>
+                            <small class="text-danger fw-semibold">Crítico (19–25)</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% if total_riesgos > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('chartRiesgos'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Bajo (1-6)', 'Moderado (7-12)', 'Alto (13-18)', 'Crítico (19-25)'],
+        datasets: [{
+            data: [{{ riesgos_bajos }}, {{ riesgos_moderados }}, {{ riesgos_altos }}, {{ riesgos_criticos }}],
+            backgroundColor: ['#20c997', '#ffc107', '#fd7e14', '#dc3545'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 } } }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

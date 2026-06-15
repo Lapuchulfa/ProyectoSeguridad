@@ -1,0 +1,130 @@
+{% extends 'layout.html' %}
+{% block title %}Riesgos{% endblock %}
+{% block page_title %}<i class="bi bi-exclamation-triangle me-2"></i>Identificación de Riesgos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0 small">Análisis de amenazas, vulnerabilidades y valoración del riesgo (Probabilidad × Impacto)</p>
+    <a href="{{ url_for('riesgos.nuevo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Identificar Riesgo
+    </a>
+</div>
+
+{% if riesgos %}
+<div class="card">
+<div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead>
+        <tr>
+            <th class="ps-3">#</th>
+            <th>Activo</th>
+            <th>Amenaza</th>
+            <th>Vulnerabilidad</th>
+            <th class="text-center">P</th>
+            <th class="text-center">I</th>
+            <th class="text-center">Nivel</th>
+            <th class="text-center">Clasificación</th>
+            <th class="text-center">Tratamiento</th>
+            <th class="text-center">Residual</th>
+            <th class="text-center">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in riesgos %}
+        {% set nivel_info = clasificar_nivel(r.nivel_riesgo) %}
+        <tr>
+            <td class="ps-3 text-muted">{{ loop.index }}</td>
+            <td>
+                <span class="fw-semibold">{{ r.activo.nombre }}</span><br>
+                <small class="text-muted">{{ r.activo.tipo }}</small>
+            </td>
+            <td>{{ r.amenaza }}</td>
+            <td><small>{{ r.vulnerabilidad }}</small></td>
+            <td class="text-center"><span class="badge bg-secondary">{{ r.probabilidad }}</span></td>
+            <td class="text-center"><span class="badge bg-secondary">{{ r.impacto }}</span></td>
+            <td class="text-center"><strong>{{ r.nivel_riesgo }}</strong></td>
+            <td class="text-center">
+                <span class="badge {{ 'bg-success' if nivel_info[0] == 'Bajo'
+                                   else 'bg-warning text-dark' if nivel_info[0] == 'Moderado'
+                                   else 'bg-danger' }}">
+                    {{ nivel_info[0] }}
+                </span>
+            </td>
+
+            <td class="text-center">
+                {% if r.tratamiento %}
+                    <span class="badge bg-success me-1">{{ r.tratamiento.estrategia }}</span>
+                    <a href="{{ url_for('tratamiento.editar', id=r.tratamiento.id) }}"
+                       class="btn btn-sm btn-outline-warning py-0">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('tratamiento.nuevo', riesgo_id=r.id) }}"
+                       class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-plus"></i> Agregar
+                    </a>
+                {% endif %}
+            </td>
+
+            <td class="text-center">
+                {% if r.residual %}
+                    {% set ri = clasificar_nivel(r.residual.nivel_residual) %}
+                    <span class="badge {{ 'bg-success' if ri[0] == 'Bajo'
+                                       else 'bg-warning text-dark' if ri[0] == 'Moderado'
+                                       else 'bg-danger' }}">
+                        {{ r.residual.nivel_residual }}
+                    </span>
+                    <a href="{{ url_for('residual.editar', id=r.residual.id) }}"
+                       class="btn btn-sm btn-outline-info py-0 ms-1">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% elif r.tratamiento %}
+                    <a href="{{ url_for('residual.nuevo', riesgo_id=r.id) }}"
+                       class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-calculator"></i> Calcular
+                    </a>
+                {% else %}
+                    <span class="text-muted small">—</span>
+                {% endif %}
+            </td>
+
+            <td class="text-center">
+                <a href="{{ url_for('riesgos.editar', id=r.id) }}"
+                   class="btn btn-sm btn-outline-primary me-1">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('riesgos.eliminar', id=r.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('¿Eliminar este riesgo y su tratamiento/residual asociado?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+
+<div class="mt-2">
+    <small class="text-muted">
+        <strong>P</strong> = Probabilidad (1–5) &nbsp;|&nbsp;
+        <strong>I</strong> = Impacto (1–5) &nbsp;|&nbsp;
+        <strong>Nivel</strong> = P × I &nbsp;|&nbsp;
+        Bajo (1–6) · Moderado (7–12) · Alto (13–18) · Crítico (19–25)
+    </small>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-exclamation-triangle text-muted" style="font-size:3rem;"></i>
+    <h5 class="mt-3 text-muted">No hay riesgos identificados</h5>
+    <p class="text-muted">Identifica los riesgos asociados a tus activos de información.</p>
+    <a href="{{ url_for('riesgos.nuevo') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Identificar primer riesgo
+    </a>
+</div>
+{% endif %}
+{% endblock %}
