@@ -2,35 +2,46 @@
 {% block title %}Iniciar Sesión{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h4 class="mb-4 text-center fw-bold">Iniciar Sesión</h4>
-                <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Correo electrónico</label>
-                        <input type="email" name="correo" class="form-control"
-                               placeholder="usuario@ejemplo.com" required autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Contraseña</label>
-                        <input type="password" name="password" class="form-control"
-                               placeholder="Tu contraseña" required>
-                    </div>
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Ingresar
-                        </button>
-                    </div>
-                </form>
-                <hr>
-                <p class="text-center text-muted small mb-0">
-                    ¿No tienes cuenta?
-                    <a href="{{ url_for('auth.register') }}">Regístrate aquí</a>
-                </p>
-            </div>
-        </div>
+<div class="py-8">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i data-lucide="shield-check" class="text-white w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">Iniciar Sesión</h1>
+        <p class="text-gray-400 text-sm">RiskGuardian — MAGERIT v3</p>
+      </div>
     </div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="mb-5">
+        <label class="block mb-1.5 text-sm font-medium text-gray-700">Correo electrónico</label>
+        <input type="email" name="correo"
+               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+               placeholder="usuario@ejemplo.com" required autofocus>
+      </div>
+
+      <div class="mb-6">
+        <label class="block mb-1.5 text-sm font-medium text-gray-700">Contraseña</label>
+        <input type="password" name="password"
+               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+               placeholder="Tu contraseña" required>
+      </div>
+
+      <button type="submit"
+              class="w-full flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+        <i data-lucide="log-in" class="w-4 h-4"></i>Ingresar
+      </button>
+    </form>
+
+    <div class="mt-6 pt-5 border-t border-gray-100 text-center text-sm text-gray-500">
+      ¿No tienes cuenta?
+      <a href="{{ url_for('auth.register') }}" class="text-blue-600 font-medium hover:underline ml-1">Regístrate aquí</a>
+    </div>
+  </div>
 </div>
 {% endblock %}

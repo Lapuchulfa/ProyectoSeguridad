@@ -1,4 +1,4 @@
-# Base de datos SQLite (cada quien tiene la suya local)
+# Base de datos SQLite
 instance/
 *.db
 *.sqlite3
@@ -7,19 +7,52 @@ instance/
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Entorno virtual Pipenv
+# Entornos virtuales
 .venv/
 venv/
+env/
+.env.local
+ENV/
 
-# Variables de entorno (claves secretas)
+# Variables de entorno (NUNCA subir al repositorio)
 .env
 .env.local
+.env.*.local
 
 # IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
 
 # Windows
 Thumbs.db
 desktop.ini
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+logs/
+
+# Pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# mypy
+.mypy_cache/

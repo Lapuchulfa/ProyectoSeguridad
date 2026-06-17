@@ -1,0 +1,113 @@
+{% extends 'layout.html' %}
+{% block title %}Mi Perfil{% endblock %}
+{% block page_title %}
+  <i data-lucide="user-circle" class="w-5 h-5"></i>Mi Perfil
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
+
+  <!-- Card: Información Personal -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+      <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+        <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
+      </div>
+      <h2 class="font-semibold text-gray-700 text-sm">Información Personal</h2>
+    </div>
+    <div class="p-6">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="update_profile">
+
+        <div class="mb-4">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Nombre completo <span class="text-red-500">*</span>
+          </label>
+          <input type="text" name="nombre"
+                 value="{{ current_user.nombre }}"
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                 required>
+        </div>
+
+        <div class="mb-6">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Correo electrónico <span class="text-red-500">*</span>
+          </label>
+          <input type="email" name="correo"
+                 value="{{ current_user.correo }}"
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                 required>
+          <p class="text-xs text-gray-400 mt-1">Usado para iniciar sesión en la plataforma.</p>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <i data-lucide="save" class="w-4 h-4"></i>Guardar Cambios
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Card: Cambiar Contraseña -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+      <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+        <i data-lucide="lock" class="w-4 h-4 text-orange-600"></i>
+      </div>
+      <h2 class="font-semibold text-gray-700 text-sm">Cambiar Contraseña</h2>
+    </div>
+    <div class="p-6">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="change_password">
+
+        <div class="mb-4">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Contraseña actual <span class="text-red-500">*</span>
+          </label>
+          <input type="password" name="current_password"
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                 required>
+        </div>
+
+        <div class="mb-4">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Nueva contraseña <span class="text-red-500">*</span>
+          </label>
+          <input type="password" name="new_password"
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                 minlength="6" required>
+          <p class="text-xs text-gray-400 mt-1">Mínimo 6 caracteres.</p>
+        </div>
+
+        <div class="mb-6">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Confirmar nueva contraseña <span class="text-red-500">*</span>
+          </label>
+          <input type="password" name="confirm_password"
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                 minlength="6" required>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors">
+          <i data-lucide="lock" class="w-4 h-4"></i>Actualizar Contraseña
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Info adicional -->
+<div class="mt-6 max-w-4xl">
+  <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-start gap-3">
+    <i data-lucide="info" class="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5"></i>
+    <div class="text-sm text-gray-500">
+      <p class="font-medium text-gray-600 mb-1">Seguridad de la cuenta</p>
+      <p>Los cambios de contraseña son efectivos inmediatamente. Asegúrate de usar una contraseña segura que no uses en otros servicios.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

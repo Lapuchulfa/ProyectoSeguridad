@@ -1,49 +1,61 @@
 {% extends 'layout.html' %}
 {% block title %}Nueva Observación{% endblock %}
-{% block page_title %}<i class="bi bi-chat-dots me-2"></i>Registrar Observación{% endblock %}
+{% block page_title %}
+  <i data-lucide="message-square" class="w-5 h-5"></i>Registrar Observación
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-<div class="col-lg-7">
-<div class="card">
-<div class="card-header">Observación / Recomendación</div>
-<div class="card-body">
-<form method="POST" action="{{ url_for('observaciones.nueva') }}" novalidate>
+<div class="max-w-2xl">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="font-semibold text-gray-700 text-sm">Observación / Recomendación</h2>
+    </div>
+    <div class="p-6">
+      <form method="POST" action="{{ url_for('observaciones.nueva') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Módulo de origen <span class="text-danger">*</span></label>
-        <select name="origen_modulo" class="form-select" required>
+        <div class="mb-4">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Módulo de origen <span class="text-red-500">*</span>
+          </label>
+          <select name="origen_modulo"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                  required>
             <option value="">— Seleccionar módulo —</option>
             {% for m in modulos %}
             <option value="{{ m }}">{{ m }}</option>
             {% endfor %}
-        </select>
-        <div class="form-text">¿A qué módulo del proceso de gestión de riesgos pertenece esta observación?</div>
-    </div>
+          </select>
+          <p class="text-xs text-gray-400 mt-1">¿A qué módulo del proceso de gestión de riesgos pertenece esta observación?</p>
+        </div>
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Observación o Recomendación <span class="text-danger">*</span></label>
-        <textarea name="comentario" class="form-control" rows="5" required
-                  placeholder="Escribe la observación, recomendación o nota relevante para las partes interesadas..."></textarea>
-        <div class="form-text">Sé específico y claro. Esta información será visible en los reportes.</div>
-    </div>
+        <div class="mb-5">
+          <label class="block mb-1.5 text-sm font-medium text-gray-700">
+            Observación o Recomendación <span class="text-red-500">*</span>
+          </label>
+          <textarea name="comentario" rows="5" required
+                    placeholder="Escribe la observación, recomendación o nota relevante para las partes interesadas..."
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"></textarea>
+          <p class="text-xs text-gray-400 mt-1">Sé específico y claro. Esta información será visible en los reportes.</p>
+        </div>
 
-    <div class="alert alert-info py-2">
-        <small>
-            <i class="bi bi-person-circle me-1"></i>
-            Esta observación quedará registrada bajo tu nombre de usuario.
-        </small>
-    </div>
+        <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 mb-5 flex items-center gap-2">
+          <i data-lucide="user-circle" class="w-4 h-4 text-blue-500 flex-shrink-0"></i>
+          <p class="text-sm text-blue-700">Esta observación quedará registrada bajo tu nombre de usuario.</p>
+        </div>
 
-    <div class="d-flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-floppy me-1"></i>Registrar Observación
-        </button>
-        <a href="{{ url_for('observaciones.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+        <div class="flex items-center gap-3">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <i data-lucide="save" class="w-4 h-4"></i>Registrar Observación
+          </button>
+          <a href="{{ url_for('observaciones.index') }}"
+             class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+            Cancelar
+          </a>
+        </div>
+      </form>
     </div>
-</form>
-</div>
-</div>
-</div>
+  </div>
 </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, make_response
-from flask_login import login_required
+from flask_login import login_required, current_user
 from models.models import Activo, Riesgo, Tratamiento, RiesgoResidual, Observacion
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
@@ -25,9 +25,15 @@ def _clasificar(nivel):
 @reportes.route('/')
 @login_required
 def index():
-    activos_lista = Activo.query.order_by(Activo.valor_total.desc()).all()
-    riesgos_lista = Riesgo.query.order_by(Riesgo.nivel_riesgo.desc()).all()
-    observaciones_lista = Observacion.query.order_by(Observacion.fecha_creacion.desc()).all()
+    uid = current_user.id
+    activos_lista = Activo.query.filter_by(usuario_id=uid)\
+                               .order_by(Activo.valor_total.desc()).all()
+    riesgos_lista = (Riesgo.query
+                     .join(Activo, Riesgo.activo_id == Activo.id)
+                     .filter(Activo.usuario_id == uid)
+                     .order_by(Riesgo.nivel_riesgo.desc()).all())
+    observaciones_lista = Observacion.query.filter_by(usuario_id=uid)\
+                                          .order_by(Observacion.fecha_creacion.desc()).all()
     return render_template('reportes/index.html',
                            activos=activos_lista,
                            riesgos=riesgos_lista,
@@ -39,6 +45,24 @@ def index():
 @reportes.route('/pdf')
 @login_required
 def pdf():
+    uid = current_user.id
+    activos_lista = Activo.query.filter_by(usuario_id=uid)\
+                               .order_by(Activo.valor_total.desc()).all()
+    riesgos_lista = (Riesgo.query
+                     .join(Activo, Riesgo.activo_id == Activo.id)
+                     .filter(Activo.usuario_id == uid)
+                     .order_by(Riesgo.nivel_riesgo.desc()).all())
+    tratamientos = (Tratamiento.query
+                    .join(Riesgo, Tratamiento.riesgo_id == Riesgo.id)
+                    .join(Activo, Riesgo.activo_id == Activo.id)
+                    .filter(Activo.usuario_id == uid).all())
+    residuales = (RiesgoResidual.query
+                  .join(Riesgo, RiesgoResidual.riesgo_id == Riesgo.id)
+                  .join(Activo, Riesgo.activo_id == Activo.id)
+                  .filter(Activo.usuario_id == uid).all())
+    observaciones_lista = Observacion.query.filter_by(usuario_id=uid)\
+                                          .order_by(Observacion.fecha_creacion.desc()).all()
+
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=landscape(A4),
@@ -50,16 +74,17 @@ def pdf():
                                  fontSize=16, spaceAfter=6)
     h1_style = ParagraphStyle('CustomH1', parent=styles['Heading1'],
                               fontSize=12, spaceAfter=4, spaceBefore=12)
-    small = ParagraphStyle('Small', parent=styles['Normal'], fontSize=7)
-    story = []
 
+    story = []
     story.append(Paragraph('Reporte de Evaluación de Riesgos Cibernéticos', title_style))
-    story.append(Paragraph(f'Metodología MAGERIT v3 | Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', styles['Normal']))
+    story.append(Paragraph(
+        f'Metodología MAGERIT v3 | Usuario: {current_user.nombre} | Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
+        styles['Normal']
+    ))
     story.append(HRFlowable(width='100%', thickness=1, color=colors.darkblue, spaceAfter=12))
 
     # 1. Activos
     story.append(Paragraph('1. Valoración de Activos de Información', h1_style))
-    activos_lista = Activo.query.order_by(Activo.valor_total.desc()).all()
     if activos_lista:
         data = [['#', 'Nombre del Activo', 'Tipo', 'Confidencialidad', 'Integridad', 'Disponibilidad', 'Valor Total']]
         for idx, a in enumerate(activos_lista, 1):
@@ -82,7 +107,6 @@ def pdf():
 
     # 2. Riesgos
     story.append(Paragraph('2. Análisis y Valoración de Riesgos', h1_style))
-    riesgos_lista = Riesgo.query.order_by(Riesgo.nivel_riesgo.desc()).all()
     if riesgos_lista:
         data2 = [['#', 'Activo', 'Amenaza', 'Vulnerabilidad', 'P', 'I', 'Nivel', 'Clasificación']]
         for idx, r in enumerate(riesgos_lista, 1):
@@ -110,7 +134,6 @@ def pdf():
 
     # 3. Tratamientos
     story.append(Paragraph('3. Tratamiento de Riesgos (ISO/IEC 27002:2022)', h1_style))
-    tratamientos = Tratamiento.query.all()
     if tratamientos:
         data3 = [['#', 'Activo / Amenaza', 'Estrategia', 'Control ISO 27002:2022', 'Responsable', 'Fecha']]
         for idx, t_item in enumerate(tratamientos, 1):
@@ -138,7 +161,6 @@ def pdf():
 
     # 4. Riesgo Residual
     story.append(Paragraph('4. Cálculo de Riesgo Residual', h1_style))
-    residuales = RiesgoResidual.query.all()
     if residuales:
         data4 = [['#', 'Activo', 'Amenaza', 'Nivel Inicial', 'P Residual', 'I Residual', 'Nivel Residual', 'Reducción']]
         for idx, res in enumerate(residuales, 1):

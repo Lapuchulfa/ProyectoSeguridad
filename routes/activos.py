@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
+import re
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
 from models.models import db, Activo
 
 activos = Blueprint('activos', __name__, url_prefix='/activos')
@@ -15,7 +16,8 @@ LABELS_CID = {0: 'Sin valor', 1: 'Muy Bajo', 2: 'Bajo', 3: 'Medio', 4: 'Alto', 5
 @activos.route('/')
 @login_required
 def index():
-    lista = Activo.query.order_by(Activo.valor_total.desc()).all()
+    lista = Activo.query.filter_by(usuario_id=current_user.id)\
+                        .order_by(Activo.valor_total.desc()).all()
     return render_template('activos/index.html', activos=lista, labels_cid=LABELS_CID)
 
 
@@ -28,10 +30,18 @@ def nuevo():
         if not nombre or not tipo:
             flash('Nombre y tipo son obligatorios.', 'warning')
             return render_template('activos/form.html', activo=None, tipos=TIPOS_ACTIVO)
-        c = int(request.form.get('confidencialidad', 0))
-        i = int(request.form.get('integridad', 0))
-        d = int(request.form.get('disponibilidad', 0))
+        try:
+            c = int(request.form.get('confidencialidad', 0))
+            i = int(request.form.get('integridad', 0))
+            d = int(request.form.get('disponibilidad', 0))
+        except (TypeError, ValueError):
+            flash('Los valores CID deben ser números válidos.', 'danger')
+            return render_template('activos/form.html', activo=None, tipos=TIPOS_ACTIVO)
+        if not all(0 <= v <= 5 for v in [c, i, d]):
+            flash('Los valores CID deben estar entre 0 y 5.', 'danger')
+            return render_template('activos/form.html', activo=None, tipos=TIPOS_ACTIVO)
         activo = Activo(
+            usuario_id=current_user.id,
             nombre=nombre,
             tipo=tipo,
             descripcion=request.form.get('descripcion', '').strip(),
@@ -54,15 +64,24 @@ def editar(id):
     if not activo:
         flash('Activo no encontrado.', 'danger')
         return redirect(url_for('activos.index'))
+    if activo.usuario_id != current_user.id:
+        abort(403)
     if request.method == 'POST':
         nombre = request.form.get('nombre', '').strip()
         tipo = request.form.get('tipo', '')
         if not nombre or not tipo:
             flash('Nombre y tipo son obligatorios.', 'warning')
             return render_template('activos/form.html', activo=activo, tipos=TIPOS_ACTIVO)
-        c = int(request.form.get('confidencialidad', 0))
-        i = int(request.form.get('integridad', 0))
-        d = int(request.form.get('disponibilidad', 0))
+        try:
+            c = int(request.form.get('confidencialidad', 0))
+            i = int(request.form.get('integridad', 0))
+            d = int(request.form.get('disponibilidad', 0))
+        except (TypeError, ValueError):
+            flash('Los valores CID deben ser números válidos.', 'danger')
+            return render_template('activos/form.html', activo=activo, tipos=TIPOS_ACTIVO)
+        if not all(0 <= v <= 5 for v in [c, i, d]):
+            flash('Los valores CID deben estar entre 0 y 5.', 'danger')
+            return render_template('activos/form.html', activo=activo, tipos=TIPOS_ACTIVO)
         activo.nombre = nombre
         activo.tipo = tipo
         activo.descripcion = request.form.get('descripcion', '').strip()
@@ -83,6 +102,8 @@ def eliminar(id):
     if not activo:
         flash('Activo no encontrado.', 'danger')
         return redirect(url_for('activos.index'))
+    if activo.usuario_id != current_user.id:
+        abort(403)
     nombre = activo.nombre
     db.session.delete(activo)
     db.session.commit()

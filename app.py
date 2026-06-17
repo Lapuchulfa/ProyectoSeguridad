@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for
 from flask_login import LoginManager, current_user
+from flask_wtf.csrf import CSRFProtect
 
 from config import Config
 from models.models import db, Usuario
@@ -17,6 +18,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)

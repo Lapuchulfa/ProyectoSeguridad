@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
 from models.models import db, Riesgo, Tratamiento
 
 tratamiento = Blueprint('tratamiento', __name__, url_prefix='/tratamiento')
@@ -66,6 +66,8 @@ def nuevo(riesgo_id):
     if not riesgo:
         flash('Riesgo no encontrado.', 'danger')
         return redirect(url_for('riesgos.index'))
+    if riesgo.activo.usuario_id != current_user.id:
+        abort(403)
     if riesgo.tratamiento:
         flash('Este riesgo ya tiene un tratamiento. Puedes editarlo.', 'info')
         return redirect(url_for('tratamiento.editar', id=riesgo.tratamiento.id))
@@ -99,6 +101,8 @@ def editar(id):
     if not t:
         flash('Tratamiento no encontrado.', 'danger')
         return redirect(url_for('riesgos.index'))
+    if t.riesgo.activo.usuario_id != current_user.id:
+        abort(403)
     riesgo = t.riesgo
     if request.method == 'POST':
         estrategia = request.form.get('estrategia', '')
@@ -126,6 +130,8 @@ def eliminar(id):
     if not t:
         flash('Tratamiento no encontrado.', 'danger')
         return redirect(url_for('riesgos.index'))
+    if t.riesgo.activo.usuario_id != current_user.id:
+        abort(403)
     db.session.delete(t)
     db.session.commit()
     flash('Tratamiento eliminado.', 'success')

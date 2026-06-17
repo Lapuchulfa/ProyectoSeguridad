@@ -1,123 +1,175 @@
 {% extends 'layout.html' %}
 {% block title %}{{ 'Editar' if trat else 'Registrar' }} Tratamiento{% endblock %}
 {% block page_title %}
-    <i class="bi bi-shield-check me-2"></i>{{ 'Editar Tratamiento' if trat else 'Registrar Tratamiento de Riesgo' }}
+  <i data-lucide="shield-check" class="w-5 h-5"></i>{{ 'Editar Tratamiento' if trat else 'Registrar Tratamiento de Riesgo' }}
 {% endblock %}
 
 {% block content %}
-<!-- Contexto del riesgo -->
 {% set nivel_info = clasificar_nivel(riesgo.nivel_riesgo) %}
-<div class="alert alert-secondary mb-4">
-    <div class="row">
-        <div class="col-md-6">
-            <strong>Activo:</strong> {{ riesgo.activo.nombre }}<br>
-            <strong>Amenaza:</strong> {{ riesgo.amenaza }}<br>
-            <strong>Vulnerabilidad:</strong> {{ riesgo.vulnerabilidad }}
-        </div>
-        <div class="col-md-6">
-            <strong>Nivel de Riesgo:</strong>
-            <span class="badge {{ 'bg-success' if nivel_info[0] == 'Bajo'
-                               else 'bg-warning text-dark' if nivel_info[0] == 'Moderado'
-                               else 'bg-danger' }} fs-6">
-                {{ riesgo.nivel_riesgo }} — {{ nivel_info[0] }}
-            </span><br>
-            <small class="text-muted">P={{ riesgo.probabilidad }} × I={{ riesgo.impacto }}</small>
-        </div>
+
+<!-- Contexto del riesgo -->
+<div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+    <div>
+      <p class="mb-1"><span class="font-medium text-gray-600">Activo:</span> <span class="text-gray-800">{{ riesgo.activo.nombre }}</span></p>
+      <p class="mb-1"><span class="font-medium text-gray-600">Amenaza:</span> <span class="text-gray-800">{{ riesgo.amenaza }}</span></p>
+      <p class="mb-0"><span class="font-medium text-gray-600">Vulnerabilidad:</span> <span class="text-gray-700 text-xs">{{ riesgo.vulnerabilidad }}</span></p>
     </div>
-</div>
-
-<div class="row">
-<div class="col-lg-8">
-<div class="card">
-<div class="card-header">Plan de Tratamiento (referencia ISO/IEC 27002:2022)</div>
-<div class="card-body">
-<form method="POST" novalidate>
-
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Estrategia de respuesta <span class="text-danger">*</span></label>
-        <div class="row g-2">
-            {% for e in estrategias %}
-            {% set icons = {'Mitigar': 'bi-shield-fill-check', 'Transferir': 'bi-arrow-right-circle', 'Aceptar': 'bi-check-circle', 'Evitar': 'bi-x-circle'} %}
-            {% set colors = {'Mitigar': 'primary', 'Transferir': 'warning', 'Aceptar': 'secondary', 'Evitar': 'danger'} %}
-            <div class="col-6 col-md-3">
-                <input type="radio" class="btn-check" name="estrategia" id="est-{{ e }}"
-                       value="{{ e }}" {{ 'checked' if trat and trat.estrategia == e else ('checked' if not trat and e == 'Mitigar' else '') }}>
-                <label class="btn btn-outline-{{ colors[e] }} w-100" for="est-{{ e }}">
-                    <i class="bi {{ icons[e] }} d-block fs-4 mb-1"></i>
-                    {{ e }}
-                </label>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="form-text mt-2">
-            <strong>Mitigar</strong>: reducir el riesgo con controles |
-            <strong>Transferir</strong>: seguro, outsourcing |
-            <strong>Aceptar</strong>: asumir el riesgo |
-            <strong>Evitar</strong>: eliminar la actividad riesgosa
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Control ISO/IEC 27002:2022 <span class="text-danger">*</span></label>
-        <select name="control_iso27002" class="form-select" required>
-            <option value="">— Seleccionar control —</option>
-            {% for c in controles %}
-            <option value="{{ c }}" {{ 'selected' if trat and trat.control_iso27002 == c else '' }}>
-                {{ c }}
-            </option>
-            {% endfor %}
-        </select>
-        <div class="form-text">Control del estándar ISO/IEC 27002:2022 más apropiado para tratar este riesgo.</div>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Detalles del control / Plan de implementación</label>
-        <textarea name="detalles_control" class="form-control" rows="4"
-                  placeholder="Describe cómo se implementará el control, qué acciones se tomarán y el plazo estimado...">{{ trat.detalles_control if trat else '' }}</textarea>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Responsable <span class="text-danger">*</span></label>
-        <input type="text" name="responsable" class="form-control"
-               value="{{ trat.responsable if trat else '' }}"
-               placeholder="Nombre o cargo del responsable de implementar el control" required>
-    </div>
-
-    <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-success">
-            <i class="bi bi-floppy me-1"></i>{{ 'Actualizar Tratamiento' if trat else 'Registrar Tratamiento' }}
-        </button>
-        <a href="{{ url_for('riesgos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
-        {% if trat %}
-        <form method="POST" action="{{ url_for('tratamiento.eliminar', id=trat.id) }}"
-              class="ms-auto"
-              onsubmit="return confirm('¿Eliminar este tratamiento?')">
-            <button type="submit" class="btn btn-outline-danger">
-                <i class="bi bi-trash me-1"></i>Eliminar Tratamiento
-            </button>
-        </form>
+    <div>
+      <p class="mb-1 font-medium text-gray-600">Nivel de Riesgo:</p>
+      <div class="flex items-center gap-2">
+        {% if nivel_info[0] == 'Bajo' %}
+          <span class="px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-700">{{ riesgo.nivel_riesgo }} — Bajo</span>
+        {% elif nivel_info[0] == 'Moderado' %}
+          <span class="px-3 py-1 rounded-lg text-sm font-bold bg-yellow-100 text-yellow-700">{{ riesgo.nivel_riesgo }} — Moderado</span>
+        {% elif nivel_info[0] == 'Alto' %}
+          <span class="px-3 py-1 rounded-lg text-sm font-bold bg-orange-100 text-orange-700">{{ riesgo.nivel_riesgo }} — Alto</span>
+        {% else %}
+          <span class="px-3 py-1 rounded-lg text-sm font-bold bg-red-100 text-red-700">{{ riesgo.nivel_riesgo }} — Crítico</span>
         {% endif %}
+        <span class="text-xs text-gray-400">P={{ riesgo.probabilidad }} × I={{ riesgo.impacto }}</span>
+      </div>
     </div>
-</form>
-</div>
-</div>
+  </div>
 </div>
 
-<div class="col-lg-4">
-    <div class="card">
-        <div class="card-header">Estrategias de Respuesta</div>
-        <div class="card-body p-0">
-            <table class="table table-sm mb-0">
-                <thead><tr><th>Estrategia</th><th>Cuándo usar</th></tr></thead>
-                <tbody>
-                    <tr><td><span class="badge bg-primary">Mitigar</span></td><td class="small">Riesgo alto, controles disponibles</td></tr>
-                    <tr><td><span class="badge bg-warning text-dark">Transferir</span></td><td class="small">Riesgo técnico, tercero más capacitado</td></tr>
-                    <tr><td><span class="badge bg-secondary">Aceptar</span></td><td class="small">Riesgo bajo o costo > beneficio</td></tr>
-                    <tr><td><span class="badge bg-danger">Evitar</span></td><td class="small">Riesgo crítico, actividad prescindible</td></tr>
-                </tbody>
-            </table>
-        </div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+  <!-- Formulario -->
+  <div class="lg:col-span-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-700 text-sm">Plan de Tratamiento (referencia ISO/IEC 27002:2022)</h2>
+      </div>
+      <div class="p-6">
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <!-- Estrategia -->
+          <div class="mb-5">
+            <label class="block mb-2 text-sm font-medium text-gray-700">
+              Estrategia de respuesta <span class="text-red-500">*</span>
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {% set icons = {'Mitigar': 'shield-check', 'Transferir': 'arrow-right-circle', 'Aceptar': 'check-circle', 'Evitar': 'x-circle'} %}
+              {% for e in estrategias %}
+              <label class="estrategia-btn flex flex-col items-center gap-1.5 p-3 border-2 rounded-xl cursor-pointer transition-all
+                {{ 'border-blue-500 bg-blue-50 text-blue-700' if (trat and trat.estrategia == e) or (not trat and e == 'Mitigar') else 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-600' }}">
+                <input type="radio" name="estrategia" value="{{ e }}" class="sr-only"
+                       {{ 'checked' if (trat and trat.estrategia == e) or (not trat and e == 'Mitigar') else '' }}>
+                <i data-lucide="{{ icons[e] }}" class="w-5 h-5"></i>
+                <span class="text-xs font-semibold">{{ e }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p class="text-xs text-gray-400 mt-2">
+              <strong>Mitigar</strong>: reducir con controles ·
+              <strong>Transferir</strong>: seguro u outsourcing ·
+              <strong>Aceptar</strong>: asumir el riesgo ·
+              <strong>Evitar</strong>: eliminar la actividad
+            </p>
+          </div>
+
+          <!-- Control ISO -->
+          <div class="mb-4">
+            <label class="block mb-1.5 text-sm font-medium text-gray-700">
+              Control ISO/IEC 27002:2022 <span class="text-red-500">*</span>
+            </label>
+            <select name="control_iso27002"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                    required>
+              <option value="">— Seleccionar control —</option>
+              {% for c in controles %}
+              <option value="{{ c }}" {{ 'selected' if trat and trat.control_iso27002 == c else '' }}>{{ c }}</option>
+              {% endfor %}
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Control del estándar ISO/IEC 27002:2022 más apropiado para tratar este riesgo.</p>
+          </div>
+
+          <!-- Detalles -->
+          <div class="mb-4">
+            <label class="block mb-1.5 text-sm font-medium text-gray-700">Detalles del control / Plan de implementación</label>
+            <textarea name="detalles_control" rows="4"
+                      placeholder="Describe cómo se implementará el control, qué acciones se tomarán y el plazo estimado..."
+                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors">{{ trat.detalles_control if trat else '' }}</textarea>
+          </div>
+
+          <!-- Responsable -->
+          <div class="mb-6">
+            <label class="block mb-1.5 text-sm font-medium text-gray-700">
+              Responsable <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="responsable"
+                   value="{{ trat.responsable if trat else '' }}"
+                   placeholder="Nombre o cargo del responsable de implementar el control"
+                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 transition-colors"
+                   required>
+          </div>
+
+          <div class="flex items-center gap-3 flex-wrap">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+              <i data-lucide="save" class="w-4 h-4"></i>{{ 'Actualizar Tratamiento' if trat else 'Registrar Tratamiento' }}
+            </button>
+            <a href="{{ url_for('riesgos.index') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+              Cancelar
+            </a>
+            {% if trat %}
+            <form method="POST" action="{{ url_for('tratamiento.eliminar', id=trat.id) }}"
+                  class="ml-auto"
+                  onsubmit="return confirm('¿Eliminar este tratamiento?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="inline-flex items-center gap-2 px-4 py-2 border border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium rounded-lg transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>Eliminar
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+
+  <!-- Referencia -->
+  <div class="lg:col-span-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-700 text-sm">Estrategias de Respuesta</h3>
+      </div>
+      <table class="w-full text-sm text-left text-gray-600">
+        <thead class="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="px-3 py-2">Estrategia</th>
+            <th class="px-3 py-2">Cuándo usar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-gray-50"><td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700 font-medium">Mitigar</span></td><td class="px-3 py-2 text-xs text-gray-400">Riesgo alto, controles disponibles</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700 font-medium">Transferir</span></td><td class="px-3 py-2 text-xs text-gray-400">Riesgo técnico, tercero más capacitado</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 font-medium">Aceptar</span></td><td class="px-3 py-2 text-xs text-gray-400">Riesgo bajo o costo &gt; beneficio</td></tr>
+          <tr><td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700 font-medium">Evitar</span></td><td class="px-3 py-2 text-xs text-gray-400">Riesgo crítico, actividad prescindible</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
-</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.estrategia-btn').forEach(function(label) {
+  label.addEventListener('click', function() {
+    document.querySelectorAll('.estrategia-btn').forEach(function(l) {
+      l.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
+      l.classList.add('border-gray-200', 'text-gray-600');
+    });
+    this.classList.remove('border-gray-200', 'text-gray-600');
+    this.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+    this.querySelector('input[type="radio"]').checked = true;
+  });
+});
+</script>
 {% endblock %}
