@@ -16,9 +16,13 @@ LABELS_CID = {0: 'Sin valor', 1: 'Muy Bajo', 2: 'Bajo', 3: 'Medio', 4: 'Alto', 5
 @activos.route('/')
 @login_required
 def index():
-    lista = Activo.query.filter_by(usuario_id=current_user.id)\
-                        .order_by(Activo.valor_total.desc()).all()
-    return render_template('activos/index.html', activos=lista, labels_cid=LABELS_CID)
+    tipo_filtro = request.args.get('tipo', '')
+    query = Activo.query.filter_by(usuario_id=current_user.id)
+    if tipo_filtro:
+        query = query.filter_by(tipo=tipo_filtro)
+    lista = query.order_by(Activo.valor_total.desc()).all()
+    return render_template('activos/index.html', activos=lista, labels_cid=LABELS_CID,
+                           tipos=TIPOS_ACTIVO, tipo_filtro=tipo_filtro)
 
 
 @activos.route('/nuevo', methods=['GET', 'POST'])
